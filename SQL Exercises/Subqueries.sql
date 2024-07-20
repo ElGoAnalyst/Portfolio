@@ -9,7 +9,8 @@ SELECT ss.CustomerID
 		SELECT AVG(s.SubTotal)
 		FROM sales_salesorderheader AS s
 		WHERE s.CustomerID = ss.CustomerID
-	  ) AS 'Average Order Total'
+	  ) 
+AS 'Average Order Total'
 FROM sales_salesorderheader AS ss
 WHERE ss.SubTotal > (
 					SELECT AVG(a.SubTotal)
