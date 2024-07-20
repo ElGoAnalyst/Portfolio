@@ -2,15 +2,15 @@
 
 SELECT SalesOrderID
 	, ROUND(LineTotal, 2) AS SalesAmount
-    , ROW_NUMBER() OVER(PARTITION BY SalesOrderID ORDER BY LineTotal DESC) AS 'Row Number'
+    	, ROW_NUMBER() OVER(PARTITION BY SalesOrderID ORDER BY LineTotal DESC) AS 'Row Number'
 FROM sales_salesorderdetail;
 
 -- Utilize RANK() to rank the total sales of each salesperson within their respective region.
 
 SELECT TerritoryID
 	, SalesPersonID
-    , SUM(SubTotal) AS Total_Sales
-    , RANK() OVER(PARTITION BY TerritoryID ORDER BY SUM(SubTotal) DESC) AS 'Rank'
+    	, SUM(SubTotal) AS Total_Sales
+    	, RANK() OVER(PARTITION BY TerritoryID ORDER BY SUM(SubTotal) DESC) AS 'Rank'
 FROM sales_salesorderheader
 GROUP BY TerritoryID
 	, SalesPersonID
@@ -20,14 +20,14 @@ ORDER BY TerritoryID ASC;
 
 SELECT ProductID
 	, Quantity
-    , DENSE_RANK() OVER( ORDER BY Quantity DESC) AS 'Rank'
+    	, DENSE_RANK() OVER( ORDER BY Quantity DESC) AS 'Rank'
 FROM production_productinventory;
 
 -- Use NTILE(4) to divide the customers into four quartiles based on their total purchase amount.
 
 SELECT CustomerID
-    , SUM(SubTotal) AS TotalPurchaseAmount
-    , NTILE(4) OVER(ORDER BY SUM(SubTotal) DESC) AS GroupNumber
+    	, SUM(SubTotal) AS TotalPurchaseAmount
+    	, NTILE(4) OVER(ORDER BY SUM(SubTotal) DESC) AS GroupNumber
 FROM sales_salesorderheader
 GROUP BY CustomerID;
 
@@ -75,21 +75,20 @@ WITH Monthly_Sales AS (
 )
 SELECT m.*
 	, LAG(MonthlySales) OVER(PARTITION BY ProductID ORDER BY OrderDate) AS PreviousMonthSales
-FROM Monthly_Sales AS m
-        
-/* Die Tabelle exportieren und in Python bearbeiten*/
+FROM Monthly_Sales AS m;
+
 
 -- Implement FIRST_VALUE() to identify the first sale transaction made by each salesperson.
 
 SELECT fv.SalesPersonID
 	, MAX(fv.FirstSalesOrderID) AS FirstSalesOrderID
-    , MAX(fv.FirstOrderDate) AS FirstOrderDate
+    	, MAX(fv.FirstOrderDate) AS FirstOrderDate
 FROM (
-		SELECT SalesPersonID
-			, FIRST_VALUE(SalesOrderID) OVER(PARTITION BY SalesPersonID ORDER BY OrderDate ASC) AS FirstSalesOrderID
-			, FIRST_VALUE(OrderDate) OVER(PARTITION BY SalesPersonID ORDER BY OrderDate ASC) AS FirstOrderDate
-		 FROM sales_salesorderheader
-	) AS fv
+	SELECT SalesPersonID
+		, FIRST_VALUE(SalesOrderID) OVER(PARTITION BY SalesPersonID ORDER BY OrderDate ASC) AS FirstSalesOrderID
+		, FIRST_VALUE(OrderDate) OVER(PARTITION BY SalesPersonID ORDER BY OrderDate ASC) AS FirstOrderDate
+	FROM sales_salesorderheader
+) AS fv
 GROUP BY fv.SalesPersonID
 ORDER BY fv.SalesPersonID ASC;
 
@@ -100,12 +99,12 @@ SELECT c.CustomerID
     , c.RecentPurchase_ProductID
     , c.OrderDate
 FROM (
-		SELECT sh.CustomerID
-			, LAST_VALUE(sa.ProductID) OVER(PARTITION BY sh.CustomerID ORDER BY sh.OrderDate ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS RecentPurchase_ProductID
-			, LAST_VALUE(sh.OrderDate) OVER(PARTITION BY sh.CustomerID ORDER BY sh.OrderDate ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS OrderDate
-            , ROW_NUMBER() OVER(PARTITION BY sh.CustomerID ORDER BY (SELECT NULL)) AS RowNumber
-		FROM sales_salesorderheader AS sh
-		JOIN sales_salesorderdetail AS sa ON sa.SalesOrderID = sh.SalesOrderID
+	SELECT sh.CustomerID
+		, LAST_VALUE(sa.ProductID) OVER(PARTITION BY sh.CustomerID ORDER BY sh.OrderDate ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS RecentPurchase_ProductID
+		, LAST_VALUE(sh.OrderDate) OVER(PARTITION BY sh.CustomerID ORDER BY sh.OrderDate ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS OrderDate
+    		, ROW_NUMBER() OVER(PARTITION BY sh.CustomerID ORDER BY (SELECT NULL)) AS RowNumber
+	FROM sales_salesorderheader AS sh
+	JOIN sales_salesorderdetail AS sa ON sa.SalesOrderID = sh.SalesOrderID
 ) AS c
 WHERE c.RowNumber = 1;
 
@@ -129,12 +128,12 @@ WITH Emp_Sales AS (
 		JOIN humanresources_employeedepartmenthistory AS e ON e.DepartmentID = d.DepartmentID
 		JOIN sales_salesorderheader AS s ON s.SalesPersonID = e.BusinessEntityID
 		GROUP BY s.SalesPersonID
-				, d.DepartmentID
-				, d.Name
+			, d.DepartmentID
+			, d.Name
 )
 SELECT es.*
 	, PERCENT_RANK() OVER(PARTITION BY es.DepartmentID ORDER BY es.TotalSales ASC) AS PercentRank
-FROM Emp_Sales AS es
+FROM Emp_Sales AS es;
 
 -- Employ the windowed SUM() function to calculate the running total of sales for each product category over time.
 
@@ -154,16 +153,16 @@ WITH Cat_Sales AS (
 )
 SELECT cs.ProductCategoryID
 	, cs.Name
-    , cs.OrderDate
-    , ROUND(SUM(cs.TotalSales) OVER(PARTITION BY CS.ProductCategoryID ORDER BY cs.OrderDate ASC), 2) AS Running_Total_Sales
+    	, cs.OrderDate
+    	, ROUND(SUM(cs.TotalSales) OVER(PARTITION BY CS.ProductCategoryID ORDER BY cs.OrderDate ASC), 2) AS Running_Total_Sales
 FROM Cat_Sales AS cs
-ORDER BYcs.ProductCategoryID ASC
-    , cs.OrderDate ASC;
+ORDER BY cs.ProductCategoryID ASC
+    	, cs.OrderDate ASC;
 
 -- Utilize the windowed AVG() function to calculate the moving average of daily sales over a 7-day period.
 
 SELECT DATE(OrderDate) AS Order_Date
-    , ROUND(AVG(SUM(SubTotal)) OVER(ORDER BY DATE(OrderDate) ASC ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS 7_Day_Moving_Average
+	, ROUND(AVG(SUM(SubTotal)) OVER(ORDER BY DATE(OrderDate) ASC ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS 7_Day_Moving_Average
 FROM sales_salesorderheader
 GROUP BY DATE(OrderDate)
 ORDER BY Order_Date ASC;
@@ -178,7 +177,7 @@ FROM sales_salesorderheader;
 
 SELECT SalesPersonID
 	, SalesOrderID
-    , SubTotal
+    	, SubTotal
 	, MAX(SubTotal) OVER(PARTITION BY SalesPersonID) AS Largest_Sale
 FROM sales_salesorderheader
 ORDER BY SalesPersonID DESC
@@ -189,9 +188,9 @@ ORDER BY SalesPersonID DESC
 
 SELECT pc.ProductCategoryID
 	, pc.Name
-    , sh.SalesOrderID
-    , sh.SubTotal
-    , MIN(sh.SubTotal) OVER(PARTITION BY pc.ProductCategoryID) AS Smallest_Sale_Amount
+    	, sh.SalesOrderID
+    	, sh.SubTotal
+    	, MIN(sh.SubTotal) OVER(PARTITION BY pc.ProductCategoryID) AS Smallest_Sale_Amount
 FROM sales_salesorderheader AS sh 
 JOIN sales_salesorderdetail AS s ON s.SalesOrderID = sh.SalesOrderID
 JOIN production_product AS pp ON pp.ProductID = s.ProductID
@@ -203,8 +202,8 @@ ORDER BY pc.ProductCategoryID ASC;
 
 SELECT SalesPersonID
 	, DATE(OrderDate) AS Order_Date
-    , SubTotal
-    , SUM(SubTotal) OVER(PARTITION BY SalesPersonID, YEAR(OrderDate) ORDER BY DATE(OrderDate) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS YTD
+    	, SubTotal
+    	, SUM(SubTotal) OVER(PARTITION BY SalesPersonID, YEAR(OrderDate) ORDER BY DATE(OrderDate) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS YTD
 FROM sales_salesorderheader
 ORDER BY SalesPersonID DESC
 	, Order_Date ASC;
@@ -213,8 +212,8 @@ ORDER BY SalesPersonID DESC
 
 WITH Quarter_Sales AS (
 		SELECT s.TerritoryID
-            , t.Name 
-            , s.SalesPersonID
+            		, t.Name 
+            		, s.SalesPersonID
 			, YEAR(s.OrderDate) AS Year
 			, QUARTER(s.OrderDate) AS Quarter
 			, ROUND(AVG(s.SubTotal), 2) AS AVG_Quarter_Sales
@@ -234,37 +233,37 @@ ORDER BY s.TerritoryID ASC;
 -- Implement a window function to find the difference in sales amount between each sale and the average sale of the day.
 
 WITH Sales AS (
-		SELECT DATE(OrderDate) AS OrderDate
-			, ROUND(AVG(SubTotal), 2) AS AverageSale
-			, ROUND(SUM(SubTotal), 2) AS TotalSales
-		FROM sales_salesorderheader
-		GROUP BY DATE(OrderDate)
+	SELECT DATE(OrderDate) AS OrderDate
+		, ROUND(AVG(SubTotal), 2) AS AverageSale
+		, ROUND(SUM(SubTotal), 2) AS TotalSales
+	FROM sales_salesorderheader
+	GROUP BY DATE(OrderDate)
 )
 SELECT s.*
 	, LAG(s.TotalSales) OVER(ORDER BY s.OrderDate ASC) AS PreviousDay
-    , ((ROUND((s.TotalSales - LAG(s.TotalSales) OVER(ORDER BY s.OrderDate ASC)) / LAG(s.TotalSales) OVER(ORDER BY s.OrderDate ASC), 2)) * 100) AS PercentChange
+   	, ((ROUND((s.TotalSales - LAG(s.TotalSales) OVER(ORDER BY s.OrderDate ASC)) / LAG(s.TotalSales) OVER(ORDER BY s.OrderDate ASC), 2)) * 100) AS PercentChange
 FROM Sales AS s
 ORDER BY s.OrderDate ASC;
 
 -- Use window functions to identify the top 3 best-selling products in each category.
 
 WITH Category_Sales AS (
-			SELECT pc.ProductCategoryID
-				, pc.Name
-				, s.ProductID
-				, COUNT(*) AS Sales_Count
-			FROM sales_salesorderdetail AS s
-			JOIN production_product AS p ON p.ProductID = s.ProductID
-			JOIN production_productsubcategory AS ps ON ps.ProductSubcategoryID = p.ProductSubcategoryID
-			JOIN production_productcategory AS pc ON pc.ProductCategoryID = ps.ProductCategoryID
-			GROUP BY pc.ProductCategoryID
-				, pc.Name
-				, s.ProductID
+		SELECT pc.ProductCategoryID
+			, pc.Name
+			, s.ProductID
+			, COUNT(*) AS Sales_Count
+		FROM sales_salesorderdetail AS s
+		JOIN production_product AS p ON p.ProductID = s.ProductID
+		JOIN production_productsubcategory AS ps ON ps.ProductSubcategoryID = p.ProductSubcategoryID
+		JOIN production_productcategory AS pc ON pc.ProductCategoryID = ps.ProductCategoryID
+		GROUP BY pc.ProductCategoryID
+			, pc.Name
+			, s.ProductID
 ),
 Best AS (
-		SELECT cs.*
-			, DENSE_RANK() OVER(PARTITION BY cs.ProductCategoryID ORDER BY cs.Sales_Count DESC) AS Best_Selling
-		FROM Category_Sales AS cs
+	SELECT cs.*
+		, DENSE_RANK() OVER(PARTITION BY cs.ProductCategoryID ORDER BY cs.Sales_Count DESC) AS Best_Selling
+	FROM Category_Sales AS cs
 )
 SELECT b.*
 FROM Best AS b
@@ -276,24 +275,24 @@ ORDER BY b.ProductCategoryID ASC
 -- Apply a window function to calculate the percentage contribution of each product to the total sales of its category.
 
 WITH Sales AS (
-		SELECT pc.ProductCategoryID
-			, pc.Name
-			, s.ProductID
-			, SUM(s.LineTotal) AS Sales_Per_Product
-			, SUM(SUM(s.LineTotal)) OVER(PARTITION BY pc.ProductCategoryID) AS Total_Sales_Per_Category
-		FROM sales_salesorderdetail AS s
-		JOIN production_product AS p ON p.ProductID = s.ProductID
-		JOIN production_productsubcategory AS ps ON ps.ProductSubcategoryID = p.ProductSubcategoryID
-		JOIN production_productcategory AS pc ON pc.ProductCategoryID = ps.ProductCategoryID
-		GROUP BY pc.ProductCategoryID
-			, pc.Name
-			, s.ProductID
+	SELECT pc.ProductCategoryID
+		, pc.Name
+		, s.ProductID
+		, SUM(s.LineTotal) AS Sales_Per_Product
+		, SUM(SUM(s.LineTotal)) OVER(PARTITION BY pc.ProductCategoryID) AS Total_Sales_Per_Category
+	FROM sales_salesorderdetail AS s
+	JOIN production_product AS p ON p.ProductID = s.ProductID
+	JOIN production_productsubcategory AS ps ON ps.ProductSubcategoryID = p.ProductSubcategoryID
+	JOIN production_productcategory AS pc ON pc.ProductCategoryID = ps.ProductCategoryID
+	GROUP BY pc.ProductCategoryID
+		, pc.Name
+		, s.ProductID
 )
 SELECT s.ProductCategoryID
 	, s.Name
 	, s.ProductID
-    , ROUND(s.Sales_Per_Product, 2) AS Sales_Per_Product
-    , ROUND(s.Total_Sales_Per_Category, 2) AS Total_Sales_Per_Category
+    	, ROUND(s.Sales_Per_Product, 2) AS Sales_Per_Product
+    	, ROUND(s.Total_Sales_Per_Category, 2) AS Total_Sales_Per_Category
 	, ROUND(((s.Sales_Per_Product / s.Total_Sales_Per_Category) * 100), 2) AS Percentage_Contribution
 FROM Sales AS s
 ORDER BY s.ProductCategoryID ASC
@@ -303,23 +302,23 @@ ORDER BY s.ProductCategoryID ASC
 -- Employ window functions to compare the sales growth of each product month-over-month.
 
 WITH Monthly_Sales AS (
-			SELECT s.ProductID
-				, YEAR(h.OrderDate) AS Year
-				, MONTH(h.OrderDate) AS Month
-				, SUM(s.LineTotal) AS TotalSales
-			FROM sales_salesorderheader AS h
-			JOIN sales_salesorderdetail AS s ON s.SalesOrderID = h.SalesOrderID
-			GROUP BY s.ProductID
-				, YEAR(h.OrderDate) 
-				, MONTH(h.OrderDate)
-			ORDER BY s.ProductID ASC
-				, Year ASC
-				, Month ASC
+		SELECT s.ProductID
+			, YEAR(h.OrderDate) AS Year
+			, MONTH(h.OrderDate) AS Month
+			, SUM(s.LineTotal) AS TotalSales
+		FROM sales_salesorderheader AS h
+		JOIN sales_salesorderdetail AS s ON s.SalesOrderID = h.SalesOrderID
+		GROUP BY s.ProductID
+			, YEAR(h.OrderDate) 
+			, MONTH(h.OrderDate)
+		ORDER BY s.ProductID ASC
+			, Year ASC
+			, Month ASC
 ),
 Previous AS (
-		SELECT m.*
-			, LAG(m.TotalSales) OVER(PARTITION BY m.ProductID ORDER BY m.Year ASC, m.Month ASC) AS PreviousMonth
-		FROM Monthly_Sales AS m
+	SELECT m.*
+		, LAG(m.TotalSales) OVER(PARTITION BY m.ProductID ORDER BY m.Year ASC, m.Month ASC) AS PreviousMonth
+	FROM Monthly_Sales AS m
 )
 SELECT p.ProductID
 	, p.Year
@@ -330,26 +329,26 @@ SELECT p.ProductID
 FROM Previous AS p
 ORDER BY p.ProductID ASC
 	, p.Year ASC
-    , p.Month ASC;
+    	, p.Month ASC;
 
 
 -- Utilize window functions to determine the median sales amount for each day.
 
 WITH Sales AS (
-		SELECT DATE(OrderDate) AS OrderDate
-			, SubTotal
-			, ROW_NUMBER() OVER(PARTITION BY DATE(OrderDate) ORDER BY SubTotal ASC) AS RowNumber
-			, COUNT(*) OVER(PARTITION BY DATE(OrderDate)) AS RowCount
-		FROM sales_salesorderheader
-		ORDER BY OrderDate ASC
-			, SubTotal ASC
+	SELECT DATE(OrderDate) AS OrderDate
+		, SubTotal
+		, ROW_NUMBER() OVER(PARTITION BY DATE(OrderDate) ORDER BY SubTotal ASC) AS RowNumber
+		, COUNT(*) OVER(PARTITION BY DATE(OrderDate)) AS RowCount
+	FROM sales_salesorderheader
+	ORDER BY OrderDate ASC
+		, SubTotal ASC
 ),
 Median AS (
-		SELECT s.OrderDate
-			, ROUND(s.SubTotal, 2) AS SalesAmount
-			, s.RowNumber
-			, CEIL(0.5 * s.RowCount) AS MedianPosition
-		FROM Sales AS s
+	SELECT s.OrderDate
+		, ROUND(s.SubTotal, 2) AS SalesAmount
+		, s.RowNumber
+		, CEIL(0.5 * s.RowCount) AS MedianPosition
+	FROM Sales AS s
 )
 SELECT m.OrderDate
 	, m.SalesAmount AS Median_Sales_Amount
@@ -361,22 +360,22 @@ ORDER BY OrderDate ASC;
 -- Implement window functions to find the salesperson with the highest average sale amount in each region.
 
 WITH Average_Sales AS (
-		SELECT h.TerritoryID
-			, t.Name AS TerritoryName
-			, h.SalesPersonID
-			, AVG(h.SubTotal) AS AverageSalesAmount
-		FROM sales_salesorderheader AS h
-		JOIN sales_salesterritory AS t ON t.TerritoryID = h.TerritoryID
-		GROUP BY h.SalesPersonID
-			, h.TerritoryID
-			, t.Name 
-		ORDER BY h.TerritoryID ASC
-			, AverageSalesAmount DESC
+	SELECT h.TerritoryID
+		, t.Name AS TerritoryName
+		, h.SalesPersonID
+		, AVG(h.SubTotal) AS AverageSalesAmount
+	FROM sales_salesorderheader AS h
+	JOIN sales_salesterritory AS t ON t.TerritoryID = h.TerritoryID
+	GROUP BY h.SalesPersonID
+		, h.TerritoryID
+		, t.Name 
+	ORDER BY h.TerritoryID ASC
+		, AverageSalesAmount DESC
 )
 SELECT a.TerritoryID
 	, a.TerritoryName
-    , a.SalesPersonID
-    , ROUND(MAX(a.AverageSalesAmount) OVER(PARTITION BY a.TerritoryID), 2) AS HighestSaleAmount
+    	, a.SalesPersonID
+    	, ROUND(MAX(a.AverageSalesAmount) OVER(PARTITION BY a.TerritoryID), 2) AS HighestSaleAmount
 FROM Average_Sales AS a
 GROUP BY a.TerritoryID
 	, a.TerritoryName
@@ -386,12 +385,12 @@ ORDER BY a.TerritoryID ASC;
 -- Apply window functions to identify the month with the highest average sales for each year.
 
 WITH Average_Sales AS (
-			SELECT YEAR(OrderDate) AS Year
-				, MONTH(OrderDate) AS Month
-				, AVG(SubTotal) AS AverageSales
-			FROM sales_salesorderheader
-			GROUP BY YEAR(OrderDate)
-				, MONTH(OrderDate)
+		SELECT YEAR(OrderDate) AS Year
+			, MONTH(OrderDate) AS Month
+			, AVG(SubTotal) AS AverageSales
+		FROM sales_salesorderheader
+		GROUP BY YEAR(OrderDate)
+			, MONTH(OrderDate)
 ),
 Best AS (
 	SELECT a.Year
@@ -401,7 +400,7 @@ Best AS (
 )
 SELECT b.Year
 	, ROUND(b.Highest_Average_Sale, 2) AS Highest_Average_Sale
-    , b.Best_Month
+    	, b.Best_Month
 FROM Best AS b
 GROUP BY b.Year
 ORDER BY b.Year ASC;
