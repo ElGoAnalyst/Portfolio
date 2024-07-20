@@ -6,17 +6,16 @@ SELECT ss.CustomerID
 	, ss.SalesOrderID
 	, ss.SubTotal
     , (
-		SELECT AVG(s.SubTotal)
-		FROM sales_salesorderheader AS s
-		WHERE s.CustomerID = ss.CustomerID
-	  ) 
-AS 'Average Order Total'
+	SELECT AVG(s.SubTotal)
+	FROM sales_salesorderheader AS s
+	WHERE s.CustomerID = ss.CustomerID
+       ) AS 'Average Order Total'
 FROM sales_salesorderheader AS ss
 WHERE ss.SubTotal > (
-					SELECT AVG(a.SubTotal)
+		    SELECT AVG(a.SubTotal)
                     FROM sales_salesorderheader AS a
                     WHERE a.CustomerID = ss.CustomerID
-					)
+		    )
 GROUP BY ss.CustomerID
 	, ss.SalesOrderID;
 
@@ -26,16 +25,16 @@ number of sales. Use this table to identify products whose number of
 sales is greater than the average number of sales across all products.*/
  
 WITH AVG_Price AS (
-			SELECT ProductID
-				, ROUND(AVG(UnitPrice), 2) AS 'Average Selling Price'
-				, COUNT(*) AS 'Sales Count'
-			FROM sales_salesorderdetail
-			GROUP BY ProductID
-            ) 
+		SELECT ProductID
+			, ROUND(AVG(UnitPrice), 2) AS 'Average Selling Price'
+			, COUNT(*) AS 'Sales Count'
+		FROM sales_salesorderdetail
+		GROUP BY ProductID
+                  ) 
 SELECT ap.*
 FROM AVG_Price AS ap 
 WHERE ap.`Sales Count` > (
-						SELECT AVG(apr.`Sales Count`) AS 'Average Sales Count'
+			SELECT AVG(apr.`Sales Count`) AS 'Average Sales Count'
                         FROM AVG_Price AS apr
                          );
 
@@ -52,7 +51,7 @@ WHERE EXISTS (
 			, ss.OrderQty
 		FROM sales_salesorderdetail AS ss
 		WHERE ss.ProductID = sa.ProductID
-			 )
+	     )
 AND sa.OrderQty > 1000;
 
 
@@ -64,10 +63,10 @@ SELECT clause.*/
 SELECT SalesOrderID
 	, SUM(OrderQty) AS TotalQuantityOrdered
     , (
-		SELECT MAX(OrderQty)
-		FROM sales_salesorderdetail AS ss
-		WHERE ss.SalesOrderID = sa.SalesOrderID
-	  ) AS HighestQty
+	SELECT MAX(OrderQty)
+	FROM sales_salesorderdetail AS ss
+	WHERE ss.SalesOrderID = sa.SalesOrderID
+      ) AS HighestQty
 FROM sales_salesorderdetail AS sa
 GROUP BY SalesOrderID
 ORDER BY TotalQuantityOrdered DESC;
@@ -82,9 +81,9 @@ SELECT DISTINCT(ss.SalesPersonID)
 FROM sales_salesorderheader AS ss
 JOIN sales_salesorderdetail AS sa ON sa.SalesOrderID = ss.SalesOrderID
 WHERE sa.ProductID NOT IN (
-						SELECT p.ProductID
+			SELECT p.ProductID
                         FROM production_productinventory AS p
-						  );
+			  );
 
 
 /*6. Identify customers who have not placed any orders in the last
@@ -95,22 +94,22 @@ appear in the orders from the past year.*/
 SELECT DISTINCT(s.CustomerID)
 FROM sales_salesorderheader AS s
 WHERE s.CustomerID NOT IN (
-					SELECT ss.CustomerID
-					FROM sales_salesorderheader AS ss
-					WHERE ss.OrderDate BETWEEN '2013-01-01' AND '2014-01-01'
-						  );
+			SELECT ss.CustomerID
+			FROM sales_salesorderheader AS ss
+			WHERE ss.OrderDate BETWEEN '2013-01-01' AND '2014-01-01'
+			  );
                          
 
-/*7. Calculate the total sales for each year and compare each year’s
+/*7. Calculate the total sales for each year and compare each years
 total sales with the overall average sales. Use a subquery to calculate
-the overall average and then compare each year’s total against it.*/
+the overall average and then compare each years total against it.*/
 
 
 SELECT YEAR(OrderDate)
 	, SUM(SubTotal) AS Total_Sales
     , (
-		SELECT AVG(a.SubTotal)
-		FROM sales_salesorderheader AS a
+	SELECT AVG(a.SubTotal)
+	FROM sales_salesorderheader AS a
       ) AS Average_Sales
 FROM sales_salesorderheader AS b
 GROUP BY YEAR(OrderDate)
