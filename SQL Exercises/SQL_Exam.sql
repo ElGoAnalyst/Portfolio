@@ -87,7 +87,7 @@ JOIN staff AS em ON em.staff_id = p.staff_id
 JOIN store As st ON st.store_id = em.store_id
 GROUP BY st.store_id
 ORDER BY `Total Profit` DESC
-	   , `Number of Sales` DESC
+	, `Number of Sales` DESC
 LIMIT 5;
 
 
@@ -122,11 +122,10 @@ SELECT t1.Store
     , t1.`Total Operating Days`
     , CONCAT('$ ', ROUND((t1.`Total Profit` / t1.`Total Operating Days`), 2)) AS 'Average Profit Per Day'
     , (	
-		SELECT COUNT(DISTINCT(i.film_id))
-		FROM inventory AS i
-        WHERE i.store_id = t1.Store
-        
-	   ) AS 'Number Of Unique Movies'
+	SELECT COUNT(DISTINCT(i.film_id))
+	FROM inventory AS i
+        WHERE i.store_id = t1.Store     
+      ) AS 'Number Of Unique Movies'
 FROM inventory AS i 
 JOIN temp_Task1 AS t1 ON t1.Store = i.store_id
 GROUP BY t1.Store
@@ -177,13 +176,13 @@ SELECT f.film_id
 	, CONCAT(f.title, '  ( ', c.name, ' )') AS Movie
     , SUM(p.amount) AS 'Total Profit'
     , CASE
-			WHEN c.name = 'Horror'
-					THEN 'Horror movies always have lower rent'
-			WHEN c.name = 'Sports' AND f.rating = 'R'
-					THEN 'Sport with an R rating is a bad decision'   
-		WHEN f.length > 170
-					THEN 'Longer movies tend to be rented less'
-		ELSE 'Unknown'
+	WHEN c.name = 'Horror'
+		THEN 'Horror movies always have lower rent'
+	WHEN c.name = 'Sports' AND f.rating = 'R'
+		THEN 'Sport with an R rating is a bad decision'   
+	WHEN f.length > 170
+		THEN 'Longer movies tend to be rented less'
+	ELSE 'Unknown'
       END AS 'Possible Reason'
 FROM payment AS p
 JOIN rental AS r ON r.rental_id = p.rental_id
@@ -192,18 +191,18 @@ JOIN film AS f ON f.film_id = i.film_id
 JOIN film_category AS fc ON fc.film_id = f.film_id
 JOIN category AS c ON c.category_id = fc.category_id
 WHERE c.name NOT IN ('Horror', 'Sports')
-	AND f.release_year = 2006 
-	OR f.length > 135
- GROUP BY f.film_id
- 		, c.category_id
- ORDER BY CASE
-			WHEN `Possible Reason` = 'Horror movies always have lower rent'
-					THEN 1
-			WHEN `Possible Reason` = 'Sport with an R rating is a bad decision'
-                    THEN 2
-			WHEN `Possible Reason` = 'Longer movies tend to be rented less'
-                    THEN 3
-			ELSE 4
+AND f.release_year = 2006 
+OR f.length > 135
+GROUP BY f.film_id
+	, c.category_id
+ORDER BY CASE
+		WHEN `Possible Reason` = 'Horror movies always have lower rent'
+			THEN 1
+		WHEN `Possible Reason` = 'Sport with an R rating is a bad decision'
+                    	THEN 2
+		WHEN `Possible Reason` = 'Longer movies tend to be rented less'
+                    	THEN 3
+		ELSE 4
 		END
         , `Total Profit` DESC
 LIMIT 150;
@@ -246,11 +245,11 @@ JOIN film AS f ON f.film_id = i.film_id
 JOIN film_category AS fc ON fc.film_id = f.film_id
 JOIN category AS c ON c.category_id = fc.category_id
 WHERE NOT EXISTS (
-				SELECT t3.film_id
+		SELECT t3.film_id
                 FROM temp_Task3 AS t3
                 WHERE t3.film_id = f.film_id
-				AND t3.`Possible Reason` = 'Unknown'
-				)
+		AND t3.`Possible Reason` = 'Unknown'
+		 )
 GROUP BY f.film_id
 	, c.category_id
 ORDER BY `Total Profit` DESC
